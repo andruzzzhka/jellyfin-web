@@ -223,8 +223,20 @@ class Manager {
                 this.groupInfo = cmd.Data;
                 break;
             case 'StateUpdate':
-                Events.trigger(this, 'group-state-update', [cmd.Data.State, cmd.Data.Reason]);
-                console.debug(`SyncPlay processGroupUpdate: state changed to ${cmd.Data.State} because ${cmd.Data.Reason}.`);
+                Events.trigger(this, 'group-state-update', [cmd.Data.State, cmd.Data.Reason, cmd.Data.Initiator]);
+                console.debug(`SyncPlay processGroupUpdate: state changed to ${cmd.Data.State} because of ${cmd.Data.Reason} from user ${cmd.Data.Initiator}.`);
+
+                if (!cmd.Data.Initiator) {
+                    break;
+                }
+
+                if (cmd.Data.Reason == 'Pause') {
+                    toast(globalize.translate('MessageSyncPlayPaused', cmd.Data.Initiator));
+                } else if (cmd.Data.Reason == 'Unpause') {
+                    toast(globalize.translate('MessageSyncPlayUnpaused', cmd.Data.Initiator));
+                } else if (cmd.Data.Reason == 'Seek') {
+                    toast(globalize.translate('MessageSyncPlaySeeked', cmd.Data.Initiator));
+                }
                 break;
             case 'GroupDoesNotExist':
                 toast(globalize.translate('MessageSyncPlayGroupDoesNotExist'));
