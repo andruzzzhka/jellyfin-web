@@ -1,6 +1,6 @@
 .toastContainer {
     position: fixed;
-    bottom: 0;
+    top: 3em;
     pointer-events: none;
     z-index: 9999999;
     padding-left: 1em;
@@ -42,7 +42,7 @@
 
 .toast:last-child {
     margin-bottom: 0;
-    transform: translateY(16em);
+    transform: translateY(-16em);
 }
 
 .toast.toastVisible {
