@@ -859,6 +859,7 @@ export class HtmlVideoPlayer {
             videoElement.removeEventListener('click', this.onClick);
             videoElement.removeEventListener('dblclick', this.onDblClick);
             videoElement.removeEventListener('waiting', this.onWaiting);
+            videoElement.removeEventListener('canPlay', this.onCanPlay);
             videoElement.removeEventListener('error', this.onError); // bound in htmlMediaHelper
 
             resetSrc(videoElement);
@@ -985,8 +986,6 @@ export class HtmlVideoPlayer {
             this.#started = true;
             elem.removeAttribute('controls');
 
-            loading.hide();
-
             seekOnPlaybackStart(this, e.target, this._currentPlayOptions.playerStartPositionTicks, () => {
                 if (this.#currentAssRenderer) {
                     this.#currentAssRenderer.timeOffset = (this._currentPlayOptions.transcodingOffsetTicks || 0) / 10000000 + this.#currentTrackOffset;
@@ -1004,6 +1003,8 @@ export class HtmlVideoPlayer {
                 this.onStartedAndNavigatedToOsd();
             }
         }
+
+        loading.hide();
         Events.trigger(this, 'playing');
     };
 
@@ -1054,9 +1055,20 @@ export class HtmlVideoPlayer {
         Events.trigger(this, 'pause');
     };
 
-    onWaiting() {
+    /**
+         * @private
+         */
+    onWaiting = () => {
         Events.trigger(this, 'waiting');
-    }
+    };
+
+    /**
+         * @private
+         */
+    onCanPlay = () => {
+        loading.hide();
+        Events.trigger(this, 'canplay');
+    };
 
     /**
          * @private
@@ -1670,6 +1682,7 @@ export class HtmlVideoPlayer {
                 videoElement.addEventListener('click', this.onClick);
                 videoElement.addEventListener('dblclick', this.onDblClick);
                 videoElement.addEventListener('waiting', this.onWaiting);
+                videoElement.addEventListener('canplay', this.onCanPlay);
                 if (options.backdropUrl) {
                     videoElement.poster = options.backdropUrl;
                 }
