@@ -83,6 +83,7 @@ class HtmlVideoPlayer extends NoActivePlayer {
         Events.on(this.player, 'pause', this._onPause);
         Events.on(this.player, 'timeupdate', this._onTimeUpdate);
         Events.on(this.player, 'playing', this._onPlaying);
+        Events.on(this.player, 'canplay', this._onPlaying);
         Events.on(this.player, 'waiting', this._onWaiting);
 
         this.savedPlaybackRate = this.player.getPlaybackRate();
