@@ -2373,34 +2373,36 @@ class PlaybackManager {
                 // this reference was only needed by sendPlaybackListToPlayer
                 playOptions.items = null;
 
-                return getPlaybackMediaSource(player, apiClient, deviceProfile, maxBitrate, item, startPosition, mediaSourceId, audioStreamIndex, subtitleStreamIndex).then(async (mediaSource) => {
+                return getPlaybackMediaSource(player, apiClient, deviceProfile, maxBitrate, item, startPosition, mediaSourceId, audioStreamIndex, subtitleStreamIndex).then(async (trackSelectionMediaSource) => {
                     const user = await apiClient.getCurrentUser();
-                    autoSetNextTracks(prevSource, mediaSource, user.Configuration.RememberAudioSelections, user.Configuration.RememberSubtitleSelections);
+                    autoSetNextTracks(prevSource, trackSelectionMediaSource, user.Configuration.RememberAudioSelections, user.Configuration.RememberSubtitleSelections);
 
-                    const streamInfo = createStreamInfo(apiClient, item.MediaType, item, mediaSource, startPosition, player);
+                    return getPlaybackMediaSource(player, apiClient, deviceProfile, maxBitrate, item, startPosition, trackSelectionMediaSource.Id, trackSelectionMediaSource.DefaultAudioStreamIndex, trackSelectionMediaSource.DefaultSubtitleStreamIndex).then(async (mediaSource) => {
+                        const streamInfo = createStreamInfo(apiClient, item.MediaType, item, mediaSource, startPosition, player);
 
-                    streamInfo.fullscreen = playOptions.fullscreen;
+                        streamInfo.fullscreen = playOptions.fullscreen;
 
-                    const playerData = getPlayerData(player);
+                        const playerData = getPlayerData(player);
 
-                    playerData.isChangingStream = false;
-                    playerData.maxStreamingBitrate = maxBitrate;
-                    playerData.streamInfo = streamInfo;
+                        playerData.isChangingStream = false;
+                        playerData.maxStreamingBitrate = maxBitrate;
+                        playerData.streamInfo = streamInfo;
 
-                    return player.play(streamInfo).then(function () {
-                        loading.hide();
-                        onPlaybackStartedFn();
-                        onPlaybackStarted(player, playOptions, streamInfo, mediaSource);
-                    }, function (err) {
-                        // TODO: Improve this because it will report playback start on a failure
-                        onPlaybackStartedFn();
-                        onPlaybackStarted(player, playOptions, streamInfo, mediaSource);
-                        setTimeout(function () {
-                            onPlaybackError.call(player, err, {
-                                type: 'mediadecodeerror',
-                                streamInfo: streamInfo
-                            });
-                        }, 100);
+                        return player.play(streamInfo).then(function () {
+                            loading.hide();
+                            onPlaybackStartedFn();
+                            onPlaybackStarted(player, playOptions, streamInfo, mediaSource);
+                        }, function (err) {
+                            // TODO: Improve this because it will report playback start on a failure
+                            onPlaybackStartedFn();
+                            onPlaybackStarted(player, playOptions, streamInfo, mediaSource);
+                            setTimeout(function () {
+                                onPlaybackError.call(player, err, {
+                                    type: 'mediadecodeerror',
+                                    streamInfo: streamInfo
+                                });
+                            }, 100);
+                        });
                     });
                 });
             });
@@ -2655,7 +2657,7 @@ class PlaybackManager {
 
                 playInternal(newItem.Item, newItemPlayOptions, function () {
                     setPlaylistState(newItem.Item.PlaylistItemId, newItem.Index);
-                });
+                }, getPreviousSource(player));
             }
         };
 
