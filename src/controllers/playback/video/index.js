@@ -1,5 +1,4 @@
 import escapeHtml from 'escape-html';
-import debounce from 'lodash-es/debounce';
 import { playbackManager } from '../../../components/playback/playbackmanager';
 import browser from '../../../scripts/browser';
 import dom from '../../../scripts/dom';
@@ -304,11 +303,15 @@ export default function (view) {
     }
 
     function slideDownToShow(elem) {
+        clearHideAnimationEventListeners(elem);
+        elem.classList.remove('hide');
         elem.classList.remove('osdHeader-hidden');
     }
 
     function slideUpToHide(elem) {
+        clearHideAnimationEventListeners(elem);
         elem.classList.add('osdHeader-hidden');
+        elem.addEventListener(transitionEndEventName, onHideAnimationComplete);
     }
 
     function clearHideAnimationEventListeners(elem) {
@@ -317,12 +320,21 @@ export default function (view) {
 
     function onHideAnimationComplete(e) {
         const elem = e.target;
-        if (elem != osdBottomElement) return;
+        if (elem !== osdBottomElement && elem !== headerElement) return;
         elem.classList.add('hide');
         elem.removeEventListener(transitionEndEventName, onHideAnimationComplete);
     }
 
-    const _focus = debounce((focusElement) => focusManager.focus(focusElement), 50);
+    const _focus = function (focusElement) {
+        // If no focus element is provided, try to keep current focus if it's valid,
+        // otherwise default to pause button
+        const currentFocus = focusElement || document.activeElement;
+        if (!currentFocus || !focusManager.isCurrentlyFocusable(currentFocus)) {
+            focusElement = osdBottomElement.querySelector('.btnPause');
+        }
+
+        if (focusElement) focusManager.focus(focusElement);
+    };
 
     function showMainOsdControls(focusElement) {
         if (!currentVisibleMenu) {
@@ -332,13 +344,11 @@ export default function (view) {
             elem.classList.remove('hide');
             elem.classList.remove('videoOsdBottom-hidden');
 
-            focusElement ||= elem.querySelector('.btnPause');
-
             if (!layoutManager.mobile) {
                 _focus(focusElement);
             }
             toggleSubtitleSync();
-        } else if (currentVisibleMenu === 'osd' && focusElement && !layoutManager.mobile) {
+        } else if (currentVisibleMenu === 'osd' && !layoutManager.mobile) {
             _focus(focusElement);
         }
     }
@@ -354,7 +364,8 @@ export default function (view) {
             toggleSubtitleSync('hide');
 
             // Firefox does not blur by itself
-            if (document.activeElement) {
+            if (osdBottomElement.contains(document.activeElement)
+                || headerElement.contains(document.activeElement)) {
                 document.activeElement.blur();
             }
         }
@@ -1232,13 +1243,17 @@ export default function (view) {
                 case 'ArrowLeft':
                 case 'ArrowRight':
                     if (!e.shiftKey) {
+                        e.preventDefault();
                         showOsd(nowPlayingPositionSlider);
                         nowPlayingPositionSlider.dispatchEvent(new KeyboardEvent(e.type, e));
                     }
                     return;
                 case 'Enter':
-                    playbackManager.playPause(currentPlayer);
-                    showOsd(btnPlayPause);
+                    if (e.target.tagName !== 'BUTTON') {
+                        e.preventDefault();
+                        playbackManager.playPause(currentPlayer);
+                        showOsd(btnPlayPause);
+                    }
                     return;
             }
         }

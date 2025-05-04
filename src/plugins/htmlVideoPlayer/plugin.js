@@ -119,6 +119,12 @@ function requireHlsPlayer(callback) {
     });
 }
 
+function getMediaStreamVideoTracks(mediaSource) {
+    return mediaSource.MediaStreams.filter(function (s) {
+        return s.Type === 'Video';
+    });
+}
+
 function getMediaStreamAudioTracks(mediaSource) {
     return mediaSource.MediaStreams.filter(function (s) {
         return s.Type === 'Audio';
@@ -1286,6 +1292,9 @@ export class HtmlVideoPlayer {
         });
         const htmlVideoPlayer = this;
         import('@jellyfin/libass-wasm').then(({ default: SubtitlesOctopus }) => {
+            const mediaSource = this._currentPlayOptions.mediaSource;
+            const videoStream = getMediaStreamVideoTracks(mediaSource)[0];
+
             const options = {
                 video: videoElement,
                 subUrl: getTextTrackUrl(track, item),
@@ -1308,7 +1317,7 @@ export class HtmlVideoPlayer {
                 dropAllAnimations: false,
                 libassMemoryLimit: 40,
                 libassGlyphLimit: 40,
-                targetFps: 24,
+                targetFps: videoStream?.ReferenceFrameRate || videoStream?.RealFrameRate || 24,
                 prescaleFactor: 0.8,
                 prescaleHeightLimit: 1080,
                 maxRenderHeight: 2160,
